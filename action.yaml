@@ -1,0 +1,35 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2025 The Linux Foundation
+
+# maven-make-build-action
+# Saves artifacts created by a workflow
+# Saved artifacts to be used by subsequent jobs for deploy and test
+name: "save-artifacts"
+# yamllint disable-line rule:line-length
+description: "Save Artifacts to be used later. Currently supported artifacts to save: docker images ONLY"
+
+inputs:
+  docker-artifacts-to-save:
+    description: "Space separated list of docker image names to be saved"
+    required: true
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: 'Export Docker image(s) as tar'
+      id: export_docker_images
+      shell: bash
+      run: |
+        docker save ${{ inputs.docker-artifacts-to-save }} -o docker-images.tar
+        echo "docker-image-tar=docker-images.tar" >> $GITHUB_OUTPUT
+
+    - name: 'Upload docker image artifact'
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image
+        path: docker-images.tar
+        if-no-files-found: error
+        overwrite: true
+        retention-days: 1
